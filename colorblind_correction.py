@@ -50,56 +50,54 @@ class ColorBlindnessCorrector:
             [-0.395913, 0.801109, 0.0]
         ])
         
-        # Precompute combined matrices for optimization
         self.combined_matrices = self._precompute_matrices()
+        self.selective_mode = False
         self.current_mode = 'normal'
         
     def _precompute_matrices(self):
-        """Precompute the combined RGB-to-RGB correction matrices."""
+        """Precompute the combined RGB-to-RGB correction matrices and simulation matrices."""
         matrices = {}
         identity = np.eye(3)
         
+        # We also need pure simulation matrices for masking
+        self.sim_rgb_matrices = {}
+        
         for cb_type in ['protanopia', 'deuteranopia', 'tritanopia']:
-            # Simulation matrix
+            # Simulation matrix in LMS
             if cb_type == 'protanopia':
-                sim = self.protanopia_sim
+                sim_lms = self.protanopia_sim
                 err_corr = np.array([
                     [0, 0, 0],
                     [0.7, 1, 0],
                     [0.7, 0, 1]
                 ])
             elif cb_type == 'deuteranopia':
-                sim = self.deuteranopia_sim
+                sim_lms = self.deuteranopia_sim
                 err_corr = np.array([
                     [1, 0.7, 0],
                     [0, 0, 0],
                     [0, 0.7, 1]
                 ])
             else: # tritanopia
-                sim = self.tritanopia_sim
+                sim_lms = self.tritanopia_sim
                 err_corr = np.array([
                     [1, 0, 0.7],
                     [0, 1, 0.7],
                     [0, 0, 0]
                 ])
             
-            # Combined matrix = M_rgb2lms * (I + (I - M_sim) * M_err_corr) * M_lms2rgb
-            # Note: The math above assumes row vectors (RGB * M). 
-            # If using cv2.transform(src, M), src is (H,W,3) and M is (3,3) or (3,4).
-            # cv2.transform(src, M) computes dst(x,y,0) = M[0,0]*src(x,y,0) + M[0,1]*src(x,y,1) + M[0,2]*src(x,y,2)
-            # This is equivalent to src(x,y) * M.T
+            # 1. Direct RGB simulation matrix (for masking)
+            # M_sim_rgb = M_rgb2lms @ M_sim_lms @ M_lms2rgb
+            sim_rgb = self.rgb2lms @ sim_lms @ self.lms2rgb
+            self.sim_rgb_matrices[cb_type] = sim_rgb
             
-            # (I - M_sim)
-            diff = identity - sim
-            # (I - M_sim) * M_err_corr
+            # 2. Combined Daltonization matrix
+            # M_combined = M_rgb2lms @ (I + (I - M_sim_lms) @ M_err_corr) @ M_lms2rgb
+            diff = identity - sim_lms
             correction = diff @ err_corr
-            # (I + correction)
             total_lms_transform = identity + correction
-            
-            # Final matrix: M_rgb2lms @ total_lms_transform @ M_lms2rgb
             combined = self.rgb2lms @ total_lms_transform @ self.lms2rgb
             
-            # Store transposed for cv2.transform or non-transposed for @
             matrices[cb_type] = combined
             
         return matrices
@@ -153,28 +151,45 @@ class ColorBlindnessCorrector:
     
     def daltonize(self, rgb_image: np.ndarray, cb_type: str) -> np.ndarray:
         """
-        Apply optimized Daltonization algorithm to correct for color blindness.
-        Uses a precomputed matrix for single-pass transformation.
+        Apply Daltonization algorithm.
+        If self.selective_mode is True, only applies correction to areas 
+        where information is actually lost for the user.
         """
         if cb_type not in self.combined_matrices:
             return rgb_image
             
-        # Use cv2.transform for high performance
-        # Input: 0-255 uint8, Output: float32, then clip and convert back
+        # 1. Generate full correction
         mat = self.combined_matrices[cb_type]
+        float_img = rgb_image.astype(np.float32)
+        full_corrected = cv2.transform(float_img, mat)
         
-        # cv2.transform expects a 3x3 matrix for (N,3) data
-        # It performs: dst[i] = mat[i,0]*src[0] + mat[i,1]*src[1] + mat[i,2]*src[2]
-        # This is exactly what we want if mat is our combined matrix
+        if not self.selective_mode:
+            # Standard full-screen behavior
+            return np.clip(full_corrected, 0, 255).astype(np.uint8)
         
-        # We need to normalize/denormalize because the matrix was derived for 0-1 range
-        # However, since it's a linear transformation, we can just apply it and clip
-        # dst = src * M is same as (src/255 * M) * 255
+        # 2. Selective Masking
+        # Find where information is lost: Original vs Simulated
+        sim_mat = self.sim_rgb_matrices[cb_type]
+        simulated = cv2.transform(float_img, sim_mat)
         
-        corrected = cv2.transform(rgb_image.astype(np.float32), mat)
-        corrected = np.clip(corrected, 0, 255).astype(np.uint8)
+        # Difference represents lost information
+        # We look for significant color differences, ignoring minor luminance shifts
+        diff = cv2.absdiff(float_img, simulated)
         
-        return corrected
+        # Max difference across color channels
+        mask = np.max(diff, axis=2)
+        
+        # Normalize and threshold the mask
+        # 0.1 (25/255) is a good threshold for "significant color"
+        mask = cv2.GaussianBlur(mask, (5, 5), 0)
+        mask = np.clip((mask - 20) * 2, 0, 255) / 255.0
+        mask = np.expand_dims(mask, axis=2)
+        
+        # 3. Blend: Only apply correction where the mask is high
+        # Result = Original + (Corrected - Original) * Mask
+        selective_corrected = float_img + (full_corrected - float_img) * mask
+        
+        return np.clip(selective_corrected, 0, 255).astype(np.uint8)
     
     def process_frame(self, frame: np.ndarray) -> np.ndarray:
         """Process a single frame based on current mode."""
@@ -193,6 +208,12 @@ class ColorBlindnessCorrector:
             print(f"Mode changed to: {mode.upper()}")
         else:
             print(f"Invalid mode: {mode}")
+
+    def toggle_selective(self):
+        """Toggle between full-screen and selective correction."""
+        self.selective_mode = not self.selective_mode
+        state = "ON (Object-Specific)" if self.selective_mode else "OFF (Full-Screen)"
+        print(f"Selective Correction: {state}")
 
 
 class ColorBlindnessApp:
@@ -290,8 +311,12 @@ class ColorBlindnessApp:
         src_label = f"Source: {'IP Camera' if self.is_ip_camera else 'Local Webcam'}"        
         cv2.putText(display_frame, src_label, (20, 100), font, 0.5, (200, 200, 200), 1)
         
+        # Selective mode status
+        sel_label = f"Selective Mode: {'ON' if self.corrector.selective_mode else 'OFF'}"
+        cv2.putText(display_frame, sel_label, (20, 125), font, 0.5, (0, 255, 255), 1)
+        
         # Draw controls panel
-        cv2.rectangle(overlay, (10, 120), (500, 260), (0, 0, 0), -1)
+        cv2.rectangle(overlay, (10, 145), (500, 310), (0, 0, 0), -1)
         cv2.addWeighted(overlay, 0.6, display_frame, 0.4, 0, display_frame)
         
         controls = [
@@ -299,10 +324,11 @@ class ColorBlindnessApp:
             "P - Protanopia (red-blind)",
             "D - Deuteranopia (green-blind)",
             "T - Tritanopia (blue-blind)",
+            "S - Toggle Selective Masking",
             "Q - Quit"
         ]
         
-        y_offset = 145
+        y_offset = 170
         for control in controls:
             cv2.putText(display_frame, control, (20, y_offset), font, 0.45, (200, 200, 200), 1)
             y_offset += 25
@@ -370,6 +396,8 @@ class ColorBlindnessApp:
                 self.corrector.set_mode('deuteranopia')
             elif key == ord('t') or key == ord('T'):
                 self.corrector.set_mode('tritanopia')
+            elif key == ord('s') or key == ord('S'):
+                self.corrector.toggle_selective()
         
         # Cleanup
         self.cap.release()

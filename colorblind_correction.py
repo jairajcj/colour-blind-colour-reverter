@@ -51,3 +51,6 @@ USE_DSHOW = True
 # Keyboard controls
 CONTROLS = {'P': 'protanopia', 'D': 'deuteranopia', 'T': 'tritanopia', 'N': 'normal'}
 
+# FPS counter
+SHOW_FPS = True
+

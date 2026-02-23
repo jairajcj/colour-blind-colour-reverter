@@ -48,3 +48,6 @@ IP_CAMERA_ENABLED = True
 # DirectShow backend for Windows
 USE_DSHOW = True
 
+# Keyboard controls
+CONTROLS = {'P': 'protanopia', 'D': 'deuteranopia', 'T': 'tritanopia', 'N': 'normal'}
+

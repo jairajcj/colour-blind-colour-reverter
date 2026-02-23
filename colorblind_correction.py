@@ -9,3 +9,6 @@ RGB_TO_LMS = np.array([[0.31399022, 0.63951294, 0.04649755],[0.15537241, 0.75789
 
 LMS_TO_RGB = np.linalg.inv(RGB_TO_LMS)
 
+# Protanopia simulation
+SIM_PROTAN = np.array([[0,1.05118294,-0.05116099],[0,1,0],[0,0,1]])
+

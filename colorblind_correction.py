@@ -33,3 +33,6 @@ def process_frame(frame):
 def set_mode(mode):
     pass # Set correction mode
 
+def toggle_selective():
+    pass # Toggle selective mode
+

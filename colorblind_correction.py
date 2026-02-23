@@ -57,3 +57,6 @@ SHOW_FPS = True
 # Auto-reconnect for IP cameras
 AUTO_RECONNECT = True
 
+import argparse
+# CLI argument parser
+

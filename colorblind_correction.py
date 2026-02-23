@@ -474,3 +474,4 @@ if __name__ == "__main__":
     main()
 
 
+# Temporal stabilization via EMA

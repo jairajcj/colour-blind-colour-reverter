@@ -26,3 +26,4 @@ if __name__ == "__main__":
     else:
         print(f"Found {len(cams)} working camera(s): {cams}")
         sys.exit(0)
+

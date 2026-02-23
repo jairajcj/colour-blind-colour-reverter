@@ -54,3 +54,6 @@ CONTROLS = {'P': 'protanopia', 'D': 'deuteranopia', 'T': 'tritanopia', 'N': 'nor
 # FPS counter
 SHOW_FPS = True
 
+# Auto-reconnect for IP cameras
+AUTO_RECONNECT = True
+

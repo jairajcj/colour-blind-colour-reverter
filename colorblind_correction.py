@@ -36,3 +36,6 @@ def set_mode(mode):
 def toggle_selective():
     pass # Toggle selective mode
 
+class ColorBlindnessApp:
+    pass # Main application class
+

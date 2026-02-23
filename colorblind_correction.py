@@ -15,3 +15,6 @@ SIM_PROTAN = np.array([[0,1.05118294,-0.05116099],[0,1,0],[0,0,1]])
 # Deuteranopia simulation
 SIM_DEUTAN = np.array([[1,0,0],[0.9513092,0,0.04866992],[0,0,1]])
 
+# Tritanopia simulation
+SIM_TRITAN = np.array([[1,0,0],[0,1,0],[-0.86744736,1.86727089,0]])
+

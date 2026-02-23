@@ -474,4 +474,3 @@ if __name__ == "__main__":
     main()
 
 
-# Laplacian edge sharpening

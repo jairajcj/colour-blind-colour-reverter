@@ -30,3 +30,6 @@ def daltonize(img, cb_type):
 def process_frame(frame):
     pass # Process single frame
 
+def set_mode(mode):
+    pass # Set correction mode
+

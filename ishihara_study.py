@@ -140,3 +140,4 @@ class IshiharaStudy:
 if __name__ == "__main__":
     study = IshiharaStudy()
     study.run()
+

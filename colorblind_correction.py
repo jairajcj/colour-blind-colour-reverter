@@ -45,3 +45,6 @@ def init_camera():
 # IP Camera support
 IP_CAMERA_ENABLED = True
 
+# DirectShow backend for Windows
+USE_DSHOW = True
+

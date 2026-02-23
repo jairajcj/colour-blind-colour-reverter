@@ -42,3 +42,6 @@ class ColorBlindnessApp:
 def init_camera():
     pass # Camera initialization
 
+# IP Camera support
+IP_CAMERA_ENABLED = True
+

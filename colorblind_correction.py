@@ -21,3 +21,6 @@ SIM_TRITAN = np.array([[1,0,0],[0,1,0],[-0.86744736,1.86727089,0]])
 def precompute():
     pass # Precompute correction matrices
 
+def simulate(img, cb_type):
+    pass # Simulate colorblindness
+

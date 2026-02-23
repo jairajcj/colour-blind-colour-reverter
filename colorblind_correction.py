@@ -27,3 +27,6 @@ def simulate(img, cb_type):
 def daltonize(img, cb_type):
     pass # Apply correction
 
+def process_frame(frame):
+    pass # Process single frame
+

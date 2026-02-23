@@ -24,3 +24,6 @@ def precompute():
 def simulate(img, cb_type):
     pass # Simulate colorblindness
 
+def daltonize(img, cb_type):
+    pass # Apply correction
+

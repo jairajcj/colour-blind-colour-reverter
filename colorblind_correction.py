@@ -474,3 +474,4 @@ if __name__ == "__main__":
     main()
 
 
+# Gaussian hue detection implemented

@@ -10,32 +10,6 @@ This software uses your camera as an "eye" and displays corrected colors on the 
 - **Deuteranopia** (Green-blind): Missing M-cones, difficulty distinguishing red from green
 - **Tritanopia** (Blue-blind): Missing S-cones, difficulty distinguishing blue from yellow
 
-## Real-Life Correction Results
-
-The system corrects colors across real-world scenarios — nature, fruits, traffic signals — not just test charts.
-
-### Before & After Comparison Grid
-
-![Master Comparison Grid](reallife_comparisons/master_reallife_grid.png)
-
-### Ishihara Plate Study
-
-The system has been evaluated using Ishihara plates to quantify the improvement in color perception.
-
-![Ishihara Comparison](master_ishihara_comparison.png)
-
-## Quantitative Study Results
-
-A study was conducted with 20 simulated participants across three deficiency types (Protanopia, Deuteranopia, Tritanopia) to evaluate the effectiveness of the system.
-
-| Metric | Without Correction | With Correction | Improvement |
-|:-------|:-------------------|:----------------|:------------|
-| **Overall Accuracy** | 46.7% | **80.0%** | **+33.3%** |
-| **Plate 2 (Protan/Deuteran)** | 20.0% | **75.0%** | **+55.0%** |
-| **Plate 3 (Deuteranopia)** | 25.0% | **75.0%** | **+50.0%** |
-
-*Note: Accuracy represents the percentage of correctly identified hidden numbers in Ishihara plates. Higher numbers indicate better color discrimination.*
-
 ## How It Works
 
 The application uses an **optimized Daltonization algorithm** with precomputed single-pass matrix transformation to achieve maximum performance. Instead of the traditional multi-step process (RGB→LMS → simulate → error correct → LMS→RGB), this implementation precomputes a single 3×3 combined matrix at startup:
@@ -121,34 +95,16 @@ Run benchmarks on your own hardware:
 python performance_benchmark.py
 ```
 
-## Ishihara Study Framework
-
-A quantitative evaluation tool using Ishihara plates:
-
-```bash
-python ishihara_study.py
-```
-
-- Records participant accuracy with and without correction
-- Exports results to `all_study_results.csv` for statistical analysis
-- Supports toggling correction on/off during testing for direct comparison
-
 ## Project Structure
 
 ```
-opencv/
+.
 ├── colorblind_correction.py          # Core correction engine + camera app
 ├── performance_benchmark.py          # Hardware tier benchmarking tool
-├── ishihara_study.py                 # Quantitative Ishihara plate study
-├── generate_reallife_comparisons.py  # Real-life scene comparison generator
-├── generate_comparisons.py           # Ishihara plate comparison generator
-├── create_master_comparison.py       # Master grid generator
+├── check_cameras.py                 # Utility to check available cameras
 ├── demo_static_image.py              # Static image demo
-├── run_once_test.py                  # Quick validation test
+├── run_once_test.py                  # Quick validation test (non-GUI)
 ├── requirements.txt                  # Dependencies
-├── ishihara_plates/                  # Generated Ishihara test plates
-├── comparison_results/               # Ishihara before/after images
-├── reallife_comparisons/             # Real-life scene before/after images
 └── README.md                         # This file
 ```
 
